@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:background="#0A0A0A">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MobileProxy"
+        android:textSize="28sp"
+        android:textColor="#E5E5E5"
+        android:textStyle="bold"
+        android:layout_marginTop="48dp"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Status indicator -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:background="@drawable/card_bg"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="STATUS"
+            android:textSize="12sp"
+            android:textColor="#A0A0A0"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Disconnected"
+            android:textSize="20sp"
+            android:textColor="#EF4444"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvDeviceId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="11sp"
+            android:textColor="#A0A0A0"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- Server URL -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:background="@drawable/card_bg"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Server URL"
+            android:textSize="14sp"
+            android:textColor="#A0A0A0"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etServerUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="ws://your-server:3000/ws"
+            android:textColor="#E5E5E5"
+            android:textColorHint="#555555"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:textSize="14sp"
+            android:inputType="textUri"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- Device Key -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:background="@drawable/card_bg"
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Device Key"
+            android:textSize="14sp"
+            android:textColor="#A0A0A0"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etDeviceKey"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Paste device key from dashboard"
+            android:textColor="#E5E5E5"
+            android:textColorHint="#555555"
+            android:background="@drawable/input_bg"
+            android:padding="12dp"
+            android:textSize="14sp"
+            android:inputType="text"
+            android:singleLine="true" />
+    </LinearLayout>
+
+    <!-- Connect/Disconnect button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnConnect"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Connect"
+        android:textSize="16sp"
+        android:textAllCaps="false"
+        android:backgroundTint="#3B82F6" />
+
+    <TextView
+        android:id="@+id/tvError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#EF4444"
+        android:textSize="12sp"
+        android:layout_marginTop="12dp"
+        android:visibility="gone" />
+
+</LinearLayout>

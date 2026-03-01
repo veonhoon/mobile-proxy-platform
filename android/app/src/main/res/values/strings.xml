@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MobileProxy</string>
+    <string name="notification_channel_name">Proxy Service</string>
+    <string name="notification_channel_description">Keeps the proxy connection alive</string>
+</resources>

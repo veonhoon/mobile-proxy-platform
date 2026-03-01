@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  password  String
+  role      Role        @default(USER)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  proxies   ProxyPort[]
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Device {
+  id         String      @id @default(uuid())
+  name       String
+  deviceKey  String      @unique
+  ipAddress  String?
+  carrier    String?
+  online     Boolean     @default(false)
+  lastSeen   DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  proxyPorts ProxyPort[]
+}
+
+model ProxyPort {
+  id           String          @id @default(uuid())
+  device       Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId     String
+  port         Int             @unique
+  username     String
+  password     String
+  enabled      Boolean         @default(true)
+  assignedTo   User?           @relation(fields: [assignedToId], references: [id])
+  assignedToId String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  logs         ConnectionLog[]
+}
+
+model ConnectionLog {
+  id          String    @id @default(uuid())
+  proxyPort   ProxyPort @relation(fields: [proxyPortId], references: [id], onDelete: Cascade)
+  proxyPortId String
+  clientIp    String
+  targetHost  String
+  bytesIn     BigInt    @default(0)
+  bytesOut    BigInt    @default(0)
+  duration    Int       @default(0)
+  createdAt   DateTime  @default(now())
+}

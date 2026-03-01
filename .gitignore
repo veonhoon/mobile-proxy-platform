@@ -1,0 +1,11 @@
+node_modules/
+.next/
+dist/
+.env
+*.tsbuildinfo
+.gradle/
+build/
+local.properties
+.idea/
+*.apk
+*.aab

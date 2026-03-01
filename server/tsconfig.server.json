@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+    "lib": ["esnext"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "include": ["src/server.ts", "src/proxy/**/*", "src/websocket/**/*", "src/lib/**/*", "prisma/**/*"],
+  "exclude": ["node_modules"]
+}

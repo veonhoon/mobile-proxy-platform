@@ -1,4 +1,6 @@
 import { createServer } from 'http';
+import { existsSync, createReadStream, statSync } from 'fs';
+import { join } from 'path';
 import next from 'next';
 import { parse } from 'url';
 import { createWebSocketServer } from './websocket/ws-server';
@@ -14,6 +16,27 @@ const handle = app.getRequestHandler();
 app.prepare().then(() => {
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true);
+
+    // Serve APK download
+    if (parsedUrl.pathname === '/download/app.apk' && req.method === 'GET') {
+      const apkPath = join(__dirname, '..', 'public', 'app.apk');
+      if (existsSync(apkPath)) {
+        const stat = statSync(apkPath);
+        res.writeHead(200, {
+          'Content-Type': 'application/vnd.android.package-archive',
+          'Content-Disposition': 'attachment; filename="MobileProxy.apk"',
+          'Content-Length': stat.size,
+        });
+        createReadStream(apkPath).pipe(res);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          error: 'APK not built yet. Run build-apk.bat to build the APK.',
+        }));
+      }
+      return;
+    }
+
     handle(req, res, parsedUrl);
   });
 

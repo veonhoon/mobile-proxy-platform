@@ -21,6 +21,9 @@
     "jsonwebtoken": "^9.0.2",
     "uuid": "^9.0.0"
   },
+  "prisma": {
+    "seed": "ts-node --project tsconfig.server.json prisma/seed.ts"
+  },
   "devDependencies": {
     "typescript": "^5.4.0",
     "@types/node": "^20.12.0",

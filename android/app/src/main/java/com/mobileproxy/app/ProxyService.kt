@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.mobileproxy.app.network.AirplaneModeToggler
 import com.mobileproxy.app.network.WebSocketClient
 
 class ProxyService : Service(), WebSocketClient.ConnectionListener {
@@ -18,6 +19,7 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
 
         const val ACTION_START = "com.mobileproxy.app.START"
         const val ACTION_STOP = "com.mobileproxy.app.STOP"
+        const val ACTION_CHANGE_IP = "com.mobileproxy.app.CHANGE_IP"
         const val EXTRA_SERVER_URL = "server_url"
         const val EXTRA_DEVICE_KEY = "device_key"
 
@@ -31,6 +33,8 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
         const val STATUS_DISCONNECTED = "disconnected"
         const val STATUS_REGISTERED = "registered"
         const val STATUS_ERROR = "error"
+        const val STATUS_IP_CHANGING = "ip_changing"
+        const val STATUS_IP_CHANGED = "ip_changed"
     }
 
     private var wsClient: WebSocketClient? = null
@@ -55,6 +59,9 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
                 stopProxy()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
+            }
+            ACTION_CHANGE_IP -> {
+                performIpChange()
             }
         }
         return START_STICKY
@@ -81,6 +88,27 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
         Log.i(TAG, "Proxy service stopped")
     }
 
+    private fun performIpChange() {
+        Log.i(TAG, "Performing IP change via airplane mode toggle")
+        updateNotification("Changing IP...")
+        broadcastStatus(STATUS_IP_CHANGING)
+
+        AirplaneModeToggler.toggleAirplaneMode(this, object : AirplaneModeToggler.Callback {
+            override fun onSuccess() {
+                Log.i(TAG, "IP change complete, WebSocket will reconnect automatically")
+                updateNotification("IP changed - reconnecting...")
+                broadcastStatus(STATUS_IP_CHANGED)
+            }
+
+            override fun onError(message: String) {
+                Log.e(TAG, "IP change failed: $message")
+                updateNotification("IP change failed")
+                broadcastStatus(STATUS_ERROR, error = message)
+                broadcastStatus(STATUS_IP_CHANGED) // Re-enable button
+            }
+        })
+    }
+
     // ConnectionListener callbacks
 
     override fun onConnected() {
@@ -104,6 +132,10 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
 
     override fun onStatsUpdate(activeConnections: Int) {
         updateNotification("Active - $activeConnections connections")
+    }
+
+    override fun onChangeIpRequested() {
+        performIpChange()
     }
 
     // Notification helpers

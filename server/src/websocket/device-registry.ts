@@ -54,6 +54,15 @@ class DeviceRegistry {
     return this.devices.size;
   }
 
+  sendChangeIp(deviceId: string): boolean {
+    const device = this.devices.get(deviceId);
+    if (!device || device.ws.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+    device.ws.send(JSON.stringify({ type: 'change_ip' }));
+    return true;
+  }
+
   async markOfflineInDb(deviceId: string): Promise<void> {
     try {
       await prisma.device.update({

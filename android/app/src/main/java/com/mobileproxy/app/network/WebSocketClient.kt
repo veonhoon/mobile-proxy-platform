@@ -32,6 +32,7 @@ class WebSocketClient(
         fun onRegistered(deviceId: String)
         fun onError(message: String)
         fun onStatsUpdate(activeConnections: Int)
+        fun onChangeIpRequested()
     }
 
     private val client = OkHttpClient.Builder()
@@ -103,6 +104,10 @@ class WebSocketClient(
                 }
                 "connect_request" -> {
                     proxyExecutor.executeConnectRequest(json)
+                }
+                "change_ip" -> {
+                    Log.i(TAG, "Received change_ip command from server")
+                    listener.onChangeIpRequested()
                 }
                 "error" -> {
                     val msg = json.optString("message", "Unknown error")

@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-me';
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'ADMIN' | 'USER';
+  role: string;
 }
 
 export function signToken(payload: JWTPayload): string {

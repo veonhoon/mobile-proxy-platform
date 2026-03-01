@@ -84,7 +84,7 @@
             android:singleLine="true" />
     </LinearLayout>
 
-    <!-- Device Key -->
+    <!-- Pairing Code -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -96,7 +96,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Device Key"
+            android:text="Pairing Code"
             android:textSize="14sp"
             android:textColor="#A0A0A0"
             android:layout_marginBottom="8dp" />
@@ -105,13 +105,14 @@
             android:id="@+id/etDeviceKey"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Paste device key from dashboard"
+            android:hint="Enter 6-character code"
             android:textColor="#E5E5E5"
             android:textColorHint="#555555"
             android:background="@drawable/input_bg"
             android:padding="12dp"
             android:textSize="14sp"
-            android:inputType="text"
+            android:inputType="textCapCharacters"
+            android:maxLength="6"
             android:singleLine="true" />
     </LinearLayout>
 
@@ -124,6 +125,31 @@
         android:textSize="16sp"
         android:textAllCaps="false"
         android:backgroundTint="#3B82F6" />
+
+    <!-- Change IP button (visible only when connected) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnChangeIp"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Change IP"
+        android:textSize="14sp"
+        android:textAllCaps="false"
+        android:backgroundTint="#F59E0B"
+        android:textColor="#000000"
+        android:layout_marginTop="8dp"
+        android:visibility="gone" />
+
+    <!-- Reset Pairing button (visible only when paired) -->
+    <TextView
+        android:id="@+id/btnResetPairing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reset Pairing"
+        android:textSize="12sp"
+        android:textColor="#A0A0A0"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        android:padding="8dp" />
 
     <TextView
         android:id="@+id/tvError"

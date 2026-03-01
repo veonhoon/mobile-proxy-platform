@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -11,28 +11,24 @@ model User {
   id        String      @id @default(uuid())
   email     String      @unique
   password  String
-  role      Role        @default(USER)
+  role      String      @default("USER")
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   proxies   ProxyPort[]
 }
 
-enum Role {
-  ADMIN
-  USER
-}
-
 model Device {
-  id         String      @id @default(uuid())
-  name       String
-  deviceKey  String      @unique
-  ipAddress  String?
-  carrier    String?
-  online     Boolean     @default(false)
-  lastSeen   DateTime?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  proxyPorts ProxyPort[]
+  id          String      @id @default(uuid())
+  name        String
+  deviceKey   String      @unique
+  pairingCode String?     @unique
+  ipAddress   String?
+  carrier     String?
+  online      Boolean     @default(false)
+  lastSeen    DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  proxyPorts  ProxyPort[]
 }
 
 model ProxyPort {
@@ -56,8 +52,8 @@ model ConnectionLog {
   proxyPortId String
   clientIp    String
   targetHost  String
-  bytesIn     BigInt    @default(0)
-  bytesOut    BigInt    @default(0)
+  bytesIn     Int       @default(0)
+  bytesOut    Int       @default(0)
   duration    Int       @default(0)
   createdAt   DateTime  @default(now())
 }

@@ -25,11 +25,16 @@ export interface PingMessage {
   type: 'ping';
 }
 
+export interface ChangeIpMessage {
+  type: 'change_ip';
+}
+
 export type ServerToPhoneMessage =
   | ProxyRequestMessage
   | ConnectRequestMessage
   | ConfigUpdateMessage
-  | PingMessage;
+  | PingMessage
+  | ChangeIpMessage;
 
 // === Phone → Server Messages ===
 
@@ -70,13 +75,19 @@ export interface PongMessage {
   type: 'pong';
 }
 
+export interface IpChangedMessage {
+  type: 'ip_changed';
+  newIp: string;
+}
+
 export type PhoneToServerMessage =
   | RegisterMessage
   | ProxyResponseHeadersMessage
   | ProxyResponseEndMessage
   | ProxyErrorMessage
   | ConnectEstablishedMessage
-  | PongMessage;
+  | PongMessage
+  | IpChangedMessage;
 
 // === Binary Frame Helpers ===
 // Binary frames: first 36 bytes = requestId (UUID string), remaining = payload

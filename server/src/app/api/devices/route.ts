@@ -4,6 +4,7 @@ import prisma from '@/lib/db';
 import { authenticateRequest, requireAdmin } from '@/lib/auth';
 import { jsonResponse, errorResponse } from '@/lib/utils';
 import { deviceRegistry } from '@/websocket/device-registry';
+import { generatePairingCode } from '@/lib/pairing';
 
 export async function GET(req: NextRequest) {
   const auth = authenticateRequest(req);
@@ -38,8 +39,24 @@ export async function POST(req: NextRequest) {
     }
 
     const deviceKey = uuidv4();
+
+    // Generate unique pairing code (retry on collision)
+    let pairingCode: string;
+    let attempts = 0;
+    while (true) {
+      pairingCode = generatePairingCode();
+      const existing = await prisma.device.findUnique({
+        where: { pairingCode },
+      });
+      if (!existing) break;
+      attempts++;
+      if (attempts > 10) {
+        return errorResponse('Failed to generate unique pairing code', 500);
+      }
+    }
+
     const device = await prisma.device.create({
-      data: { name, deviceKey },
+      data: { name, deviceKey, pairingCode },
     });
 
     return jsonResponse(device, 201);

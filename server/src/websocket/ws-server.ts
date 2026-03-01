@@ -61,6 +61,18 @@ export function createWebSocketServer(server: HttpServer): WebSocketServer {
             tunnelManager.handleConnectEstablished(message.requestId);
             break;
 
+          case 'ip_changed':
+            if (registeredDeviceId && 'newIp' in message) {
+              const newIp = (message as any).newIp;
+              console.log(`[WS] Device ${registeredDeviceId} IP changed to ${newIp}`);
+              const device = deviceRegistry.getById(registeredDeviceId);
+              if (device) {
+                device.ipAddress = newIp;
+              }
+              await deviceRegistry.markOnlineInDb(registeredDeviceId, newIp);
+            }
+            break;
+
           case 'pong':
             if (registeredDeviceId) {
               const device = deviceRegistry.getById(registeredDeviceId);

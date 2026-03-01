@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/useAuth';
 
 interface Device {
   id: string;
   name: string;
   deviceKey: string;
+  pairingCode: string | null;
   ipAddress: string | null;
   carrier: string | null;
   online: boolean;
@@ -21,12 +22,9 @@ export default function DevicesPage() {
   const [newName, setNewName] = useState('');
   const [createdDevice, setCreatedDevice] = useState<Device | null>(null);
   const [loading, setLoading] = useState(true);
+  const [changingIp, setChangingIp] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDevices();
-  }, []);
-
-  async function loadDevices() {
+  const loadDevices = useCallback(async () => {
     try {
       const res = await authFetch('/api/devices');
       const data = await res.json();
@@ -36,7 +34,17 @@ export default function DevicesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [authFetch]);
+
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices]);
+
+  // Auto-refresh every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(loadDevices, 10000);
+    return () => clearInterval(interval);
+  }, [loadDevices]);
 
   async function createDevice(e: React.FormEvent) {
     e.preventDefault();
@@ -49,6 +57,7 @@ export default function DevicesPage() {
       if (res.ok) {
         setCreatedDevice(data);
         setNewName('');
+        setShowCreate(false);
         loadDevices();
       }
     } catch (err) {
@@ -66,6 +75,21 @@ export default function DevicesPage() {
     }
   }
 
+  async function changeIp(id: string) {
+    setChangingIp(id);
+    try {
+      const res = await authFetch(`/api/devices/${id}/change-ip`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Failed to change IP');
+      }
+    } catch (err) {
+      console.error('Failed to change IP:', err);
+    } finally {
+      setTimeout(() => setChangingIp(null), 10000);
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -75,21 +99,46 @@ export default function DevicesPage() {
         </button>
       </div>
 
-      {/* Created device key display */}
+      {/* Created device - pairing code display */}
       {createdDevice && (
         <div className="alert alert-success" style={{ marginBottom: '1rem' }}>
-          Device created! Device Key (save this - shown only once):
-          <br />
-          <code
-            className="copy-text"
-            style={{ marginTop: '0.5rem', display: 'inline-block' }}
-            onClick={() => navigator.clipboard.writeText(createdDevice.deviceKey)}
-          >
-            {createdDevice.deviceKey}
-          </code>
+          <div style={{ marginBottom: '0.5rem' }}>
+            Device <strong>{createdDevice.name}</strong> created!
+          </div>
+          {createdDevice.pairingCode && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                Pairing Code (enter this in the app):
+              </span>
+              <br />
+              <code
+                className="copy-text"
+                style={{
+                  fontSize: '2rem',
+                  letterSpacing: '0.3em',
+                  fontWeight: 'bold',
+                  display: 'inline-block',
+                  marginTop: '0.25rem',
+                  padding: '0.5rem 1rem',
+                  cursor: 'pointer',
+                }}
+                onClick={() => navigator.clipboard.writeText(createdDevice.pairingCode!)}
+                title="Click to copy"
+              >
+                {createdDevice.pairingCode}
+              </code>
+            </div>
+          )}
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+            Device Key: <code
+              className="copy-text"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigator.clipboard.writeText(createdDevice.deviceKey)}
+              title="Click to copy"
+            >{createdDevice.deviceKey}</code>
+          </div>
           <button
             className="btn btn-sm btn-secondary"
-            style={{ marginLeft: '0.5rem' }}
             onClick={() => setCreatedDevice(null)}
           >
             Dismiss
@@ -140,6 +189,7 @@ export default function DevicesPage() {
               <tr>
                 <th>Status</th>
                 <th>Name</th>
+                <th>Pairing Code</th>
                 <th>IP Address</th>
                 <th>Carrier</th>
                 <th>Proxy Ports</th>
@@ -156,6 +206,20 @@ export default function DevicesPage() {
                     </span>
                   </td>
                   <td>{device.name}</td>
+                  <td>
+                    <code
+                      style={{
+                        letterSpacing: '0.15em',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => device.pairingCode && navigator.clipboard.writeText(device.pairingCode)}
+                      title="Click to copy"
+                    >
+                      {device.pairingCode || '-'}
+                    </code>
+                  </td>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
                     {device.ipAddress || '-'}
                   </td>
@@ -167,12 +231,27 @@ export default function DevicesPage() {
                       : 'Never'}
                   </td>
                   <td>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => deleteDevice(device.id)}
-                    >
-                      Delete
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      {device.online && (
+                        <button
+                          className="btn btn-sm"
+                          style={{
+                            backgroundColor: changingIp === device.id ? '#666' : '#F59E0B',
+                            color: '#000',
+                          }}
+                          onClick={() => changeIp(device.id)}
+                          disabled={changingIp === device.id}
+                        >
+                          {changingIp === device.id ? 'Changing...' : 'Change IP'}
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => deleteDevice(device.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

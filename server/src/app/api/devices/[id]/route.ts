@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const auth = authenticateRequest(req);
-  if (!auth || !requireAdmin(auth)) {
+  if (!auth) {
     return errorResponse('Unauthorized', 401);
   }
 
@@ -20,6 +20,11 @@ export async function GET(
 
   if (!device) {
     return errorResponse('Device not found', 404);
+  }
+
+  // Non-admin can only access their own devices
+  if (auth.role !== 'ADMIN' && device.ownerId !== auth.userId) {
+    return errorResponse('Forbidden', 403);
   }
 
   return jsonResponse({
@@ -55,14 +60,24 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   const auth = authenticateRequest(req);
-  if (!auth || !requireAdmin(auth)) {
+  if (!auth) {
     return errorResponse('Unauthorized', 401);
+  }
+
+  const device = await prisma.device.findUnique({ where: { id: params.id } });
+  if (!device) {
+    return errorResponse('Device not found', 404);
+  }
+
+  // Non-admin can only delete their own devices
+  if (auth.role !== 'ADMIN' && device.ownerId !== auth.userId) {
+    return errorResponse('Forbidden', 403);
   }
 
   try {
     await prisma.device.delete({ where: { id: params.id } });
     return jsonResponse({ success: true });
   } catch (err) {
-    return errorResponse('Device not found', 404);
+    return errorResponse('Failed to delete device', 500);
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/db';
-import { authenticateRequest, requireAdmin } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth';
 import { jsonResponse, errorResponse } from '@/lib/utils';
 import { proxyManager } from '@/proxy/proxy-manager';
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const auth = authenticateRequest(req);
-  if (!auth || !requireAdmin(auth)) {
+  if (!auth) {
     return errorResponse('Unauthorized', 401);
   }
 
@@ -55,13 +55,23 @@ export async function POST(req: NextRequest) {
       return errorResponse('Device not found', 404);
     }
 
+    // Non-admin can only create proxies on devices they own
+    if (auth.role !== 'ADMIN' && device.ownerId !== auth.userId) {
+      return errorResponse('Forbidden: you can only create proxies on your own devices', 403);
+    }
+
+    // For non-admin, auto-assign to self
+    const resolvedAssignedToId = auth.role === 'ADMIN'
+      ? (assignedToId || null)
+      : auth.userId;
+
     const proxyPort = await prisma.proxyPort.create({
       data: {
         deviceId,
         port: portNum,
         username,
         password,
-        assignedToId: assignedToId || null,
+        assignedToId: resolvedAssignedToId,
       },
       include: {
         device: { select: { id: true, name: true } },

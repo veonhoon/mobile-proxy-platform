@@ -36,11 +36,17 @@ export default function DashboardOverview() {
           totalUsers: users.length,
         });
       } else {
-        const proxyRes = await authFetch('/api/proxies');
+        const [devRes, proxyRes] = await Promise.all([
+          authFetch('/api/devices'),
+          authFetch('/api/proxies'),
+        ]);
+
+        const devices = await devRes.json();
         const proxies = await proxyRes.json();
+
         setStats({
-          totalDevices: 0,
-          onlineDevices: 0,
+          totalDevices: devices.length,
+          onlineDevices: devices.filter((d: any) => d.online).length,
           totalProxies: proxies.length,
           totalUsers: 0,
         });
@@ -57,23 +63,19 @@ export default function DashboardOverview() {
       </div>
 
       <div className="stats-grid">
-        {isAdmin && (
-          <>
-            <div className="card stat-card">
-              <div className="stat-value">{stats.totalDevices}</div>
-              <div className="stat-label">Total Devices</div>
-            </div>
-            <div className="card stat-card">
-              <div className="stat-value" style={{ color: 'var(--success)' }}>
-                {stats.onlineDevices}
-              </div>
-              <div className="stat-label">Online Devices</div>
-            </div>
-          </>
-        )}
+        <div className="card stat-card">
+          <div className="stat-value">{stats.totalDevices}</div>
+          <div className="stat-label">{isAdmin ? 'Total Devices' : 'My Devices'}</div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-value" style={{ color: 'var(--success)' }}>
+            {stats.onlineDevices}
+          </div>
+          <div className="stat-label">Online Devices</div>
+        </div>
         <div className="card stat-card">
           <div className="stat-value">{stats.totalProxies}</div>
-          <div className="stat-label">Proxy Ports</div>
+          <div className="stat-label">{isAdmin ? 'Proxy Ports' : 'My Proxies'}</div>
         </div>
         {isAdmin && (
           <div className="card stat-card">

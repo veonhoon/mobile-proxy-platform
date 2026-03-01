@@ -15,6 +15,7 @@ model User {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   proxies   ProxyPort[]
+  devices   Device[]    @relation("OwnedDevices")
 }
 
 model Device {
@@ -26,6 +27,8 @@ model Device {
   carrier     String?
   online      Boolean     @default(false)
   lastSeen    DateTime?
+  ownerId     String?
+  owner       User?       @relation("OwnedDevices", fields: [ownerId], references: [id])
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   proxyPorts  ProxyPort[]

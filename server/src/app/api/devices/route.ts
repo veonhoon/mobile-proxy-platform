@@ -1,18 +1,21 @@
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '@/lib/db';
-import { authenticateRequest, requireAdmin } from '@/lib/auth';
+import { authenticateRequest } from '@/lib/auth';
 import { jsonResponse, errorResponse } from '@/lib/utils';
 import { deviceRegistry } from '@/websocket/device-registry';
 import { generatePairingCode } from '@/lib/pairing';
 
 export async function GET(req: NextRequest) {
   const auth = authenticateRequest(req);
-  if (!auth || !requireAdmin(auth)) {
+  if (!auth) {
     return errorResponse('Unauthorized', 401);
   }
 
+  const where = auth.role === 'ADMIN' ? {} : { ownerId: auth.userId };
+
   const devices = await prisma.device.findMany({
+    where,
     include: { proxyPorts: { select: { id: true, port: true, enabled: true } } },
     orderBy: { createdAt: 'desc' },
   });
@@ -28,7 +31,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const auth = authenticateRequest(req);
-  if (!auth || !requireAdmin(auth)) {
+  if (!auth) {
     return errorResponse('Unauthorized', 401);
   }
 
@@ -56,7 +59,12 @@ export async function POST(req: NextRequest) {
     }
 
     const device = await prisma.device.create({
-      data: { name, deviceKey, pairingCode },
+      data: {
+        name,
+        deviceKey,
+        pairingCode,
+        ownerId: auth.role === 'ADMIN' ? null : auth.userId,
+      },
     });
 
     return jsonResponse(device, 201);

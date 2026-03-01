@@ -21,6 +21,7 @@ export default function Sidebar({ isAdmin, onLogout, email }: SidebarProps) {
           { href: '/dashboard/users', label: 'Users', icon: '@' },
         ]
       : []),
+    { href: '/dashboard/my-devices', label: 'My Devices', icon: '+' },
     { href: '/dashboard/my-proxies', label: 'My Proxies', icon: '*' },
   ];
 

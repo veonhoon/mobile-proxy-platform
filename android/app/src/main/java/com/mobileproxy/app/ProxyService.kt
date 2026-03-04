@@ -2,8 +2,11 @@ package com.mobileproxy.app
 
 import android.app.*
 import android.content.Intent
+import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -39,6 +42,11 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
 
     private var wsClient: WebSocketClient? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
+    private var serverUrl: String? = null
+    private var deviceKey: String? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var connectionCheckRunnable: Runnable? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -76,17 +84,49 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
     }
 
     private fun startProxy(serverUrl: String, deviceKey: String) {
+        this.serverUrl = serverUrl
+        this.deviceKey = deviceKey
         wsClient?.disconnect()
         wsClient = WebSocketClient(this, serverUrl, deviceKey, this)
         wsClient?.connect()
+        startConnectionWatchdog()
         Log.i(TAG, "Proxy service started, connecting to $serverUrl")
     }
 
     private fun stopProxy() {
+        stopConnectionWatchdog()
         wsClient?.disconnect()
         wsClient = null
         Log.i(TAG, "Proxy service stopped")
     }
+
+    private fun startConnectionWatchdog() {
+        stopConnectionWatchdog()
+        connectionCheckRunnable = object : Runnable {
+            override fun run() {
+                val client = wsClient
+                if (client != null && isRunning()) {
+                    if (!client.isConnected()) {
+                        Log.w(TAG, "Watchdog: connection dead, forcing reconnect")
+                        val url = serverUrl ?: return
+                        val key = deviceKey ?: return
+                        wsClient?.disconnect()
+                        wsClient = WebSocketClient(this@ProxyService, url, key, this@ProxyService)
+                        wsClient?.connect()
+                    }
+                }
+                handler.postDelayed(this, 60_000) // Check every 60 seconds
+            }
+        }
+        handler.postDelayed(connectionCheckRunnable!!, 60_000)
+    }
+
+    private fun stopConnectionWatchdog() {
+        connectionCheckRunnable?.let { handler.removeCallbacks(it) }
+        connectionCheckRunnable = null
+    }
+
+    private fun isRunning(): Boolean = wsClient != null
 
     private fun performIpChange() {
         Log.i(TAG, "Performing IP change via airplane mode toggle")
@@ -188,6 +228,15 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
         val pm = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MobileProxy::ProxyWakeLock")
         wakeLock?.acquire(Long.MAX_VALUE) // Keep CPU awake
+
+        // Also acquire WiFi lock to prevent network drops
+        try {
+            val wm = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+            wifiLock = wm.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "MobileProxy::WifiLock")
+            wifiLock?.acquire()
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not acquire WiFi lock: ${e.message}")
+        }
     }
 
     private fun releaseWakeLock() {
@@ -195,5 +244,9 @@ class ProxyService : Service(), WebSocketClient.ConnectionListener {
             if (it.isHeld) it.release()
         }
         wakeLock = null
+        wifiLock?.let {
+            if (it.isHeld) it.release()
+        }
+        wifiLock = null
     }
 }

@@ -60,6 +60,10 @@ class WebSocketClient(
         webSocket = null
     }
 
+    fun isConnected(): Boolean {
+        return webSocket != null && isRunning
+    }
+
     private fun doConnect() {
         if (!isRunning) return
 

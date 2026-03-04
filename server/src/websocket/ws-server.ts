@@ -88,9 +88,13 @@ export function createWebSocketServer(server: HttpServer): WebSocketServer {
     ws.on('close', (code, reason) => {
       console.log(`[WS] Connection closed: code=${code} reason=${reason?.toString() || 'none'}`);
       if (registeredDeviceId) {
-        deviceRegistry.markOfflineInDb(registeredDeviceId);
-        deviceRegistry.unregister(registeredDeviceId);
-        console.log(`[WS] Device disconnected: ${registeredDeviceId}`);
+        // Only unregister if this WS is still the active one for this device
+        deviceRegistry.unregisterByWs(registeredDeviceId, ws);
+        // Only mark offline if device is actually gone (not replaced)
+        if (!deviceRegistry.isOnline(registeredDeviceId)) {
+          deviceRegistry.markOfflineInDb(registeredDeviceId);
+          console.log(`[WS] Device disconnected: ${registeredDeviceId}`);
+        }
       }
     });
 

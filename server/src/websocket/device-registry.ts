@@ -17,9 +17,27 @@ class DeviceRegistry {
   private keyToId: Map<string, string> = new Map(); // deviceKey → deviceId
 
   register(device: ConnectedDevice): void {
+    // Close old connection if exists (prevent ghost sessions)
+    const existing = this.devices.get(device.deviceId);
+    if (existing && existing.ws !== device.ws) {
+      console.log(`[Registry] Closing stale connection for ${device.deviceId}`);
+      try { existing.ws.close(1000, 'Replaced by new connection'); } catch {}
+    }
     this.devices.set(device.deviceId, device);
     this.keyToId.set(device.deviceKey, device.deviceId);
     console.log(`[Registry] Device registered: ${device.name} (${device.deviceId})`);
+  }
+
+  unregisterByWs(deviceId: string, ws: WebSocket): void {
+    const device = this.devices.get(deviceId);
+    // Only unregister if the WS matches (prevent new connection from being killed by old close event)
+    if (device && device.ws === ws) {
+      this.keyToId.delete(device.deviceKey);
+      this.devices.delete(deviceId);
+      console.log(`[Registry] Device unregistered: ${device.name} (${deviceId})`);
+    } else if (device) {
+      console.log(`[Registry] Ignoring stale unregister for ${deviceId} (ws mismatch)`);
+    }
   }
 
   unregister(deviceId: string): void {

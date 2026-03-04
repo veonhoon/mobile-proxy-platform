@@ -160,6 +160,30 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
+
+        // Auto-connect if we have saved credentials and a paired device key
+        val autoServerUrl = prefs.getString(KEY_SERVER_URL, "") ?: ""
+        val autoDeviceKey = prefs.getString(KEY_PAIRED_DEVICE_KEY, null)
+        if (autoServerUrl.isNotEmpty() && autoDeviceKey != null && !isConnected) {
+            Log.i(TAG, "Auto-connecting to $autoServerUrl with device key $autoDeviceKey")
+            handler.postDelayed({
+                startProxyService()
+            }, 1000)
+        }
+
+        // Handle ws_url from intent extras (update server URL if provided)
+        intent?.getStringExtra("ws_url")?.let { newUrl ->
+            if (newUrl.isNotEmpty() && newUrl != autoServerUrl) {
+                Log.i(TAG, "Updating server URL from intent: $newUrl")
+                prefs.edit().putString(KEY_SERVER_URL, newUrl).apply()
+                etServerUrl.setText(newUrl)
+                // Restart service with new URL if already connected
+                if (isConnected) {
+                    stopProxyService()
+                    handler.postDelayed({ startProxyService() }, 2000)
+                }
+            }
+        }
     }
 
     override fun onResume() {

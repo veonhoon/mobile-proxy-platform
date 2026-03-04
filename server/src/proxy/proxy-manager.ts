@@ -1,8 +1,9 @@
 import prisma from '../lib/db';
 import { TcpProxyServer, ProxyPortConfig } from './tcp-proxy-server';
+import { Socks5ProxyServer, Socks5ProxyConfig } from './socks5-proxy-server';
 
 class ProxyManager {
-  private proxies: Map<string, TcpProxyServer> = new Map(); // proxyPortId → server
+  private proxies: Map<string, TcpProxyServer | Socks5ProxyServer> = new Map();
 
   async startProxy(config: ProxyPortConfig): Promise<void> {
     // Stop existing if running on same id
@@ -16,6 +17,22 @@ class ProxyManager {
       this.proxies.set(config.proxyPortId, server);
     } catch (err: any) {
       console.error(`[ProxyManager] Failed to start proxy on port ${config.port}:`, err.message);
+      throw err;
+    }
+  }
+
+  async startSocks5Proxy(config: Socks5ProxyConfig): Promise<void> {
+    const key = `socks5-${config.proxyPortId}`;
+    if (this.proxies.has(key)) {
+      await this.stopProxy(key);
+    }
+
+    const server = new Socks5ProxyServer(config);
+    try {
+      await server.start();
+      this.proxies.set(key, server);
+    } catch (err: any) {
+      console.error(`[ProxyManager] Failed to start SOCKS5 on port ${config.port}:`, err.message);
       throw err;
     }
   }
@@ -77,7 +94,23 @@ class ProxyManager {
         });
       } catch (err: any) {
         console.error(
-          `[ProxyManager] Failed to start port ${port.port}:`,
+          `[ProxyManager] Failed to start HTTP port ${port.port}:`,
+          err.message
+        );
+      }
+
+      // Also start SOCKS5 on port+1
+      try {
+        await this.startSocks5Proxy({
+          port: port.port + 1,
+          deviceId: port.deviceId,
+          username: port.username,
+          password: port.password,
+          proxyPortId: port.id,
+        });
+      } catch (err: any) {
+        console.error(
+          `[ProxyManager] Failed to start SOCKS5 port ${port.port + 1}:`,
           err.message
         );
       }

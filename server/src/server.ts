@@ -1,3 +1,10 @@
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught exception:', err);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[FATAL] Unhandled rejection:', err);
+});
+
 import { createServer } from 'http';
 import { existsSync, createReadStream, statSync } from 'fs';
 import { join } from 'path';

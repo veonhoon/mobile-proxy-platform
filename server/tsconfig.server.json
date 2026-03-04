@@ -11,6 +11,6 @@
     "rootDir": "./src",
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src/server.ts", "src/proxy/**/*", "src/websocket/**/*", "src/lib/**/*", "prisma/**/*"],
+  "include": ["src/server.ts", "src/server-standalone.ts", "src/keep-alive.ts", "src/proxy/**/*", "src/websocket/**/*", "src/lib/**/*", "prisma/**/*"],
   "exclude": ["node_modules"]
 }

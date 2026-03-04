@@ -8,6 +8,9 @@ interface PendingRequest {
   bytesIn: number;
   bytesOut: number;
   startTime: number;
+  isSocks5?: boolean;
+  socks5OnConnect?: () => void;
+  socks5OnError?: (error: string) => void;
 }
 
 class TunnelManager {
@@ -26,6 +29,34 @@ class TunnelManager {
       bytesIn: 0,
       bytesOut: 0,
       startTime: Date.now(),
+    });
+
+    clientSocket.on('close', () => {
+      this.pendingRequests.delete(requestId);
+    });
+
+    clientSocket.on('error', () => {
+      this.pendingRequests.delete(requestId);
+    });
+  }
+
+  registerSocks5Request(
+    requestId: string,
+    clientSocket: net.Socket,
+    onConnect: () => void,
+    onError: (error: string) => void
+  ): void {
+    this.pendingRequests.set(requestId, {
+      clientSocket,
+      requestId,
+      isConnect: true,
+      headersSent: false,
+      bytesIn: 0,
+      bytesOut: 0,
+      startTime: Date.now(),
+      isSocks5: true,
+      socks5OnConnect: onConnect,
+      socks5OnError: onError,
     });
 
     clientSocket.on('close', () => {
@@ -66,8 +97,12 @@ class TunnelManager {
       return;
     }
 
-    // Send 200 Connection Established to client
-    req.clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+    if (req.isSocks5 && req.socks5OnConnect) {
+      req.socks5OnConnect();
+    } else {
+      // Send 200 Connection Established to client (HTTP CONNECT)
+      req.clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+    }
     req.headersSent = true;
   }
 
@@ -95,12 +130,16 @@ class TunnelManager {
     const req = this.pendingRequests.get(requestId);
     if (!req) return;
 
-    if (!req.headersSent && !req.clientSocket.destroyed) {
+    if (req.isSocks5 && req.socks5OnError) {
+      req.socks5OnError(error);
+    } else if (!req.headersSent && !req.clientSocket.destroyed) {
       req.clientSocket.write(
         `HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/plain\r\n\r\nProxy Error: ${error}`
       );
+      req.clientSocket.end();
+    } else {
+      req.clientSocket.end();
     }
-    req.clientSocket.end();
     this.pendingRequests.delete(requestId);
   }
 

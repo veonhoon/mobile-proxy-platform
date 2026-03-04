@@ -85,7 +85,8 @@ export function createWebSocketServer(server: HttpServer): WebSocketServer {
       }
     });
 
-    ws.on('close', () => {
+    ws.on('close', (code, reason) => {
+      console.log(`[WS] Connection closed: code=${code} reason=${reason?.toString() || 'none'}`);
       if (registeredDeviceId) {
         deviceRegistry.markOfflineInDb(registeredDeviceId);
         deviceRegistry.unregister(registeredDeviceId);
